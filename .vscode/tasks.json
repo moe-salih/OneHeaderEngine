@@ -1,0 +1,44 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "cppbuild",
+			"label": "C/C++: cl.exe build active file",
+			"command": "cl.exe",
+			"args": [
+				"/Zi",
+				"/EHsc",
+				"/nologo",
+				"/std:c++latest",
+				"/MT",
+				"/W4",
+				"/Ot",
+				"/arch:AVX2",
+				"/Qpar",
+				"/Fo${workspaceFolder}\\target\\intermediate\\",
+				"/Fd${workspaceFolder}\\target\\intermediate\\",
+				"/Fe${workspaceFolder}\\target\\${workspaceFolderBasename}.exe",
+				"${workspaceFolder}\\src\\*.c*",
+				"/I${workspaceFolder}\\inc",
+				"/I${workspaceFolder}\\inc\\3rd",
+				"/link",
+				"/LIBPATH:${workspaceFolder}\\lib",
+				"glfw3_mt.lib", "glad.lib", 
+				"opengl32.lib", "gdi32.lib",
+				"user32.lib", "shell32.lib",
+				"fmt.lib"
+			],
+			"options": {
+				"cwd": "${fileDirname}"
+			},
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"detail": "compiler: cl.exe"
+		}
+	]
+}

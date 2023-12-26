@@ -1,0 +1,17 @@
+{
+    "files.associations": {
+        "filesystem": "cpp",
+        "system_error": "cpp",
+        "xmemory": "cpp",
+        "xstring": "cpp",
+        "iosfwd": "cpp",
+        "xlocbuf": "cpp",
+        "unordered_map": "cpp",
+        "algorithm": "cpp",
+        "charconv": "cpp",
+        "ios": "cpp",
+        "istream": "cpp",
+        "ostream": "cpp",
+        "functional": "cpp"
+    }
+}
