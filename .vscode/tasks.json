@@ -11,7 +11,6 @@
 				"/nologo",
 				"/std:c++latest",
 				"/MT",
-				"/W4",
 				"/Ot",
 				"/arch:AVX2",
 				"/Qpar",
@@ -26,7 +25,7 @@
 				"glfw3_mt.lib", "glad.lib", 
 				"opengl32.lib", "gdi32.lib",
 				"user32.lib", "shell32.lib",
-				"fmt.lib"
+				"fmt.lib", "imgui.lib", "imgui_impl.lib"
 			],
 			"options": {
 				"cwd": "${fileDirname}"

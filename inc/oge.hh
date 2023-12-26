@@ -22,6 +22,9 @@
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_glfw.h"
+#include "imgui/imgui_impl_opengl3.h"
 
 namespace oge {
 
@@ -549,11 +552,31 @@ namespace oge {
                 virtual void on_detach() {}
                 virtual void on_update( const float&) {}
                 virtual void on_event(events::event&) {}
+
+                virtual void pre_update() {}
+                virtual void post_update() {}
                 
                 inline const char* name() const { return _name; }
 
             protected:
                 const char* _name;
+        };
+
+        struct imgui_layer : public layer {
+            public:
+                imgui_layer();
+                ~imgui_layer() = default;
+
+                virtual void on_attach() override;
+                virtual void on_detach() override;
+                virtual void on_update( const float&) override {}
+                virtual void on_event(events::event&) override;
+
+                void pre_update() override;
+                void post_update() override;
+
+                bool on_mouse_button_press(events::mouse_button_event& e);
+
         };
 
         struct layer_stack {
@@ -1181,11 +1204,79 @@ namespace oge {
             glfw::terminate();
         }
 
+        imgui_layer::imgui_layer() : layer("ImGui Layer") {}
+
+        void imgui_layer::on_attach() {
+            IMGUI_CHECKVERSION();
+            ImGui::CreateContext();
+
+            ImGuiIO& io = ImGui::GetIO();
+
+            io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+            io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+            io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+
+            ImGui::StyleColorsDark();
+
+            ImGuiStyle& style = ImGui::GetStyle();
+            if(io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+                style.WindowRounding = 1.0f;
+                style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+            }
+
+            application& app = application::get();
+            GLFWwindow* window = static_cast<GLFWwindow*>(app.get_window().native_window());
+
+            ImGui_ImplGlfw_InitForOpenGL(window, true);
+            ImGui_ImplOpenGL3_Init("#version 460");
+            LOG_INFO("ImGuiLayer::Attached");
+        }
+
+        void imgui_layer::on_detach() {
+            ImGui_ImplOpenGL3_Shutdown();
+            ImGui_ImplGlfw_Shutdown();
+            ImGui::DestroyContext();
+            LOG_INFO("ImGuiLayer::Detached");
+        }
+
+        void imgui_layer::pre_update() {
+            ImGui_ImplOpenGL3_NewFrame();
+            ImGui_ImplGlfw_NewFrame();
+            ImGui::NewFrame();
+        }
+
+        void imgui_layer::post_update() {
+            application& app = application::get();
+            ImGuiIO& io = ImGui::GetIO();
+            io.DisplaySize = ImVec2((float)app.get_window().size().x, (float)app.get_window().size().y);
+
+            ImGui::Render();
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+            if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+                GLFWwindow* backup_current_context = glfwGetCurrentContext();
+                ImGui::UpdatePlatformWindows();
+                ImGui::RenderPlatformWindowsDefault();
+                glfwMakeContextCurrent(backup_current_context);
+            }
+        }
+
+        void imgui_layer::on_event(events::event& e) {
+            events::event_dispatcher dispatcher(e);
+            dispatcher.dispatch<events::mouse_button_press_event>(std::bind(&imgui_layer::on_mouse_button_press, this, std::placeholders::_1));
+        }
+
+        bool imgui_layer::on_mouse_button_press(events::mouse_button_event& e) {
+            ImGuiIO& io = ImGui::GetIO();
+            return io.WantCaptureMouse;
+        }
+
 
         layer_stack::layer_stack() {}
 
         layer_stack::~layer_stack() {
             for (layer* layer : _layers) {
+                layer->on_detach();
                 delete layer;
             }
         }
@@ -1242,7 +1333,9 @@ namespace oge {
                 _lastframe_time = time;
 
                 for (layer* layer : _layer_stack) {
+                    layer->pre_update();
                     layer->on_update(delta_time);
+                    layer->post_update();
                 }
 
                 _window->on_update();
